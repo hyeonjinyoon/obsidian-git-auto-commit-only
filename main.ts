@@ -1,13 +1,6 @@
-import {
-	App,
-	FileSystemAdapter,
-	Notice,
-	Plugin,
-	PluginSettingTab,
-	Setting
-} from 'obsidian';
+import {App, FileSystemAdapter, Notice, Plugin, PluginSettingTab, Setting} from 'obsidian';
 
-import { exec } from 'child_process';
+import {exec} from 'child_process';
 
 interface GitOnlyAutoCommitPluginSettings {
 	intervalMinutes: number;
@@ -88,8 +81,6 @@ export default class GitOnlyAutoCommitPlugin extends Plugin {
 			}
 			
 			await this.run('git push', cwd);
-
-			new Notice('git auto commit complete');
 		} catch (e: any) {
 			const code = typeof e?.code === 'number' ? e.code : -1;
 			const stdout = (e?.stdout ?? '').toString();
