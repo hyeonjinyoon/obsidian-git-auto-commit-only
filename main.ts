@@ -65,6 +65,27 @@ export default class GitOnlyAutoCommitPlugin extends Plugin {
 
 			await this.run('git rev-parse --is-inside-work-tree', cwd);
 
+			// Pull with stash: stash local changes, pull, then reapply
+			const status = await this.run('git status --porcelain', cwd);
+			const hasChanges = status.stdout.trim().length > 0;
+
+			if (hasChanges) {
+				await this.run('git stash push -m "auto-stash before pull"', cwd);
+			}
+
+			try {
+				await this.run('git pull', cwd);
+			} catch (pullErr: any) {
+				if (hasChanges) {
+					await this.run('git stash pop', cwd).catch(() => {});
+				}
+				throw pullErr;
+			}
+
+			if (hasChanges) {
+				await this.run('git stash pop', cwd);
+			}
+
 			const msg = this.buildCommitMessage();
 
 			await this.run('git add -A', cwd);
