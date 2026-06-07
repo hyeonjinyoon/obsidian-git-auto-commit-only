@@ -65,7 +65,11 @@ export default class GitOnlyAutoCommitPlugin extends Plugin {
 
 			await this.run('git rev-parse --is-inside-work-tree', cwd);
 
-			await this.run('git pull', cwd);
+			const hasRemote = await this.hasRemote(cwd);
+
+			if (hasRemote) {
+				await this.run('git pull', cwd);
+			}
 
 			const msg = this.buildCommitMessage();
 
@@ -81,8 +85,10 @@ export default class GitOnlyAutoCommitPlugin extends Plugin {
 					throw e;
 				}
 			}
-			
-			await this.run('git push', cwd);
+
+			if (hasRemote) {
+				await this.run('git push', cwd);
+			}
 		} catch (e: any) {
 			const code = typeof e?.code === 'number' ? e.code : -1;
 			const stdout = (e?.stdout ?? '').toString();
@@ -92,6 +98,15 @@ export default class GitOnlyAutoCommitPlugin extends Plugin {
 			console.error('[GitAutoCommitOnly]', e);
 		} finally {
 			this.isRunning = false;
+		}
+	}
+
+	private async hasRemote(cwd: string): Promise<boolean> {
+		try {
+			const { stdout } = await this.run('git remote', cwd);
+			return stdout.trim().length > 0;
+		} catch {
+			return false;
 		}
 	}
 
